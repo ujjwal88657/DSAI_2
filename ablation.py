@@ -17,15 +17,15 @@ from sklearn.model_selection import train_test_split
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data.dataset import apply_noise, clean_text, inject_asymmetric_noise
-from losses.robust_losses import (
+from dataset import apply_noise, clean_text, inject_asymmetric_noise
+from robust_losses import (
     CrossEntropyLoss, SymmetricCrossEntropyLoss,
     GeneralizedCrossEntropyLoss, MAELoss, BootstrappingLoss,
     compute_per_sample_loss,
 )
-from training.noise_strategies import CoTeaching
-from evaluation.metrics import compute_metrics, compute_loss
-from utils.helpers import set_seed
+from noise_strategies import CoTeaching
+from metrics import compute_metrics, compute_loss
+from helpers import set_seed
 
 
 # ── Lightweight dataset & model ───────────────────────────────────────────────
@@ -116,7 +116,7 @@ def _run(X_tr, y_tr, noisy_mask, X_val, y_val, X_te, y_te,
 def _load_data(data_path: str):
     import pandas as pd
     df = pd.read_csv(data_path).rename(columns={"hate_label": "label"})
-    from data.dataset import clean_text
+    from dataset import clean_text
     df["text"] = df["text"].apply(clean_text)
     df = df[df["text"].str.len() > 3].reset_index(drop=True)
     df["label"]          = df["label"].astype(int)
@@ -163,7 +163,7 @@ def run_ablation(data_path: str, output_dir: str = "./ablation_results"):
     for nr in noise_rates:
         print(f"\n{'─'*60}\n  NOISE RATE = {nr:.0%}\n{'─'*60}")
         if nr > 0:
-            from data.dataset import inject_asymmetric_noise
+            from dataset import inject_asymmetric_noise
             y_noisy, mask = inject_asymmetric_noise(y_clean, nr, 2, seed=42)
         else:
             y_noisy, mask = y_clean.copy(), np.zeros(len(y_clean), dtype=bool)

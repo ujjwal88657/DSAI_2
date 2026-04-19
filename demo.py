@@ -20,13 +20,13 @@ from sklearn.model_selection import train_test_split
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import DATASET_PATH
-from data.dataset import clean_text, apply_noise
-from losses.robust_losses import SymmetricCrossEntropyLoss, BootstrappingLoss, compute_per_sample_loss
-from training.noise_strategies import CoTeaching, GaussianMixtureNoiseSeparator, SmallLossTrick, NoiseRateEstimator
-from evaluation.metrics import compute_metrics, compute_loss, compute_per_language_metrics
-from visualization.plots import (plot_training_curves, plot_confusion_matrix,
+from dataset import clean_text, apply_noise
+from robust_losses import SymmetricCrossEntropyLoss, BootstrappingLoss, compute_per_sample_loss
+from noise_strategies import CoTeaching, GaussianMixtureNoiseSeparator, SmallLossTrick, NoiseRateEstimator
+from metrics import compute_metrics, compute_loss, compute_per_language_metrics
+from plots import (plot_training_curves, plot_confusion_matrix,
     plot_per_class_performance, plot_loss_distribution, plot_embeddings, plot_per_language)
-from utils.helpers import set_seed, save_json
+from helpers import set_seed, save_json
 
 # ── Config ───────────────────────────────────────────────────────────────────
 class Cfg:

@@ -14,7 +14,7 @@ import torch
 import torch.nn.functional as F
 from scipy.stats import norm
 from typing import Dict, List, Tuple, Optional
-from losses.robust_losses import compute_per_sample_loss
+from robust_losses import compute_per_sample_loss
 
 
 # ── 1. Small-Loss Trick ────────────────────────────────────────────────────────
@@ -62,7 +62,10 @@ class CoTeaching:
 
     def _build_schedule(self) -> np.ndarray:
         s = np.ones(self.total_epochs) * self.forget_rate
-        s[:self.num_gradual] = np.linspace(0, self.forget_rate ** self.exponent, self.num_gradual)
+        gradual_epochs = min(self.num_gradual, self.total_epochs)
+        s[:gradual_epochs] = np.linspace(
+            0, self.forget_rate ** self.exponent, gradual_epochs
+        )
         return s
 
     def get_forget_rate(self, epoch: int) -> float:

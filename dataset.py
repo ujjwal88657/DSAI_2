@@ -247,10 +247,12 @@ class DataModule:
             train_df["is_noisy"]       = 0
 
         # Val / Test keep clean labels
-        for split_df in [val_df, test_df]:
-            split_df = split_df.copy()
-            split_df["original_label"] = split_df["label"]
-            split_df["is_noisy"]       = 0
+        val_df = val_df.copy()
+        val_df["original_label"] = val_df["label"]
+        val_df["is_noisy"]       = 0
+        test_df = test_df.copy()
+        test_df["original_label"] = test_df["label"]
+        test_df["is_noisy"]       = 0
 
         self.train_df = train_df.reset_index(drop=True)
         self.val_df   = val_df.reset_index(drop=True)

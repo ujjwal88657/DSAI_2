@@ -19,15 +19,15 @@ from torch.optim import AdamW
 from typing import Dict, List, Optional, Tuple
 from tqdm import tqdm
 
-from losses.robust_losses import (
+from robust_losses import (
     build_loss, BootstrappingLoss, compute_per_sample_loss
 )
-from training.noise_strategies import (
+from noise_strategies import (
     SmallLossTrick, CoTeaching,
     GaussianMixtureNoiseSeparator,
     LabelRefurbishmentStore, NoiseRateEstimator,
 )
-from evaluation.metrics import evaluate_model
+from metrics import evaluate_model
 
 
 # ── Logger ─────────────────────────────────────────────────────────────────────
@@ -118,9 +118,10 @@ class Trainer:
                 pct_start=self.tcfg.warmup_ratio, anneal_strategy="cos",
             )
         self.opt1 = self._build_optimiser(self.model1)
-        self.opt2 = self._build_optimiser(self.model2)
         self.sched1 = _s(self.opt1)
-        self.sched2 = _s(self.opt2)
+        if self.tcfg.use_co_teaching:
+            self.opt2 = self._build_optimiser(self.model2)
+            self.sched2 = _s(self.opt2)
 
     # ── One Co-Teaching step ──────────────────────────────────────────────────
     def _step(self, batch1: Dict, batch2: Dict, epoch: int) -> Tuple[float, float]:
@@ -152,6 +153,20 @@ class Trainer:
         use_boot = (epoch >= self.tcfg.bootstrap_start_epoch
                     and self.tcfg.use_bootstrapping)
         loss_fn  = self.boot_loss if use_boot else self.loss_fn
+
+        if not self.tcfg.use_co_teaching:
+            self.opt1.zero_grad()
+            out1 = self.model1(ids1, msk1, tt1)
+            if use_boot:
+                soft1 = F.softmax(out1["logits"], dim=1)
+                self.refurb.update(idx1, soft1)
+            l1 = loss_fn(out1["logits"], lbl1).mean()
+            l1.backward()
+            nn.utils.clip_grad_norm_(self.model1.parameters(), self.tcfg.gradient_clip)
+            self.opt1.step()
+            if self.sched1:
+                self.sched1.step()
+            return l1.item(), l1.item()
 
         # Model 1 learns from model2's clean selection (from batch2)
         self.opt1.zero_grad()

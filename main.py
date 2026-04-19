@@ -20,19 +20,19 @@ from torch.utils.data import DataLoader
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import CFG
-from data.dataset import DataModule
-from models.classifier import build_dual_models
-from training.trainer import Trainer
-from training.noise_strategies import GaussianMixtureNoiseSeparator
-from evaluation.metrics import predict, compute_metrics, compute_loss, evaluate_model
-from visualization.plots import run_all_visualizations
-from utils.helpers import set_seed, get_device, save_json
+from dataset import DataModule
+from classifier import build_dual_models, build_model
+from trainer import Trainer
+from noise_strategies import GaussianMixtureNoiseSeparator
+from metrics import predict, compute_metrics, compute_loss, evaluate_model
+from plots import run_all_visualizations
+from helpers import set_seed, get_device, save_json
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 def parse_args():
     p = argparse.ArgumentParser(description="Hate Speech Noisy-Label Pipeline")
-    p.add_argument("--epochs",        type=int,   default=None)
+    p.add_argument("--epochs", "--epoch", type=int, default=None)
     p.add_argument("--batch_size",    type=int,   default=None)
     p.add_argument("--noise_rate",    type=float, default=None)
     p.add_argument("--noise_type",    type=str,   default=None,
@@ -80,7 +80,11 @@ def main():
 
     # ── 2. Models ──────────────────────────────────────────────────────────────
     print("\n" + "="*60 + "\nSTEP 2: MODELS\n" + "="*60)
-    model1, model2 = build_dual_models(cfg, device)
+    if cfg.training.use_co_teaching:
+        model1, model2 = build_dual_models(cfg, device)
+    else:
+        model1 = build_model(cfg, device)
+        model2 = model1
 
     # ── 3. Train ───────────────────────────────────────────────────────────────
     print("\n" + "="*60 + "\nSTEP 3: TRAINING\n" + "="*60)
@@ -105,7 +109,7 @@ def main():
     test_metrics["loss"]  = compute_loss(probs, labels)
 
     if languages:
-        from evaluation.metrics import compute_per_language_metrics
+        from metrics import compute_per_language_metrics
         test_metrics["per_language"] = compute_per_language_metrics(
             preds, labels, languages, cfg.data.class_names
         )
